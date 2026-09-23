@@ -1,0 +1,17 @@
+# Acme Global Technologies: Health Benefits & Insurance Program (v2.8)
+
+## Section 1: Medical, Dental & Vision Coverage Plans
+1.1 Medical Plan Options: The company sponsors two primary medical insurance options through BlueCross:
+    (a) Premier PPO Plan: $500 individual / $1,000 family deductible, 90% in-network co-insurance, fixed $25 primary care co-pay.
+    (b) High-Deductible Health Plan (HDHP): $1,600 individual / $3,200 family deductible, 100% preventive coverage, eligible for Health Savings Account (HSA).
+1.2 Health Savings Account (HSA) Employer Match: For employees enrolled in the HDHP, Acme Global provides a dollar-for-dollar employer contribution match up to $1,000 per year for individual coverage, or up to $2,000 per year for family coverage.
+1.3 Vision and Dental: Comprehensive preventive dental cleanings (twice annually) and annual eye exams with a $200 hardware frame allowance are 100% company-subsidized.
+
+## Section 2: Mental Health & Wellness Benefits
+2.1 Employee Assistance Program (EAP): All employees and their household dependents have 24/7 confidential access to licensed mental health professionals, including up to 8 free face-to-face or virtual therapy sessions per issue per year.
+2.2 Annual Wellness Reimbursement: Employees can claim up to $600 annually for gym memberships, fitness trackers, meditation apps, or ergonomic fitness equipment. Claims require itemized receipts.
+
+## Section 3: Retirement 401(k) Savings & Financial Wellness
+3.1 401(k) Employer Matching Contribution: Acme Global matches 100% of employee elective salary deferrals up to the first 4% of eligible compensation, plus 50% on the next 2% (maximum total company match = 5% of salary).
+3.2 Vesting Schedule: Employer matching contributions vest immediately at 100% from day one of employment.
+3.3 Open Enrollment Window: Annual benefits open enrollment occurs from November 1st through November 21st. Mid-year changes are permitted only following a Qualifying Life Event (QLE) such as marriage, birth, or spouse job loss, reported within 30 days.
