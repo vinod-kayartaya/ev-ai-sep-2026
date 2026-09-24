@@ -2,6 +2,7 @@ from typing import TypedDict
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
+# from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import interrupt, Command
 
 
@@ -65,11 +66,15 @@ builder.add_edge("process_order", END)
 # Persistent checkpointer
 # ---------------------------------------------------------
 
+
 with SqliteSaver.from_conn_string("orders.db") as checkpointer:
 
     graph = builder.compile(
         checkpointer=checkpointer
     )
+
+    # graph.get_graph().draw_png(output_file_path="ex05.png")
+    # exit(0)
 
     config = {
         "configurable": {
@@ -90,6 +95,7 @@ with SqliteSaver.from_conn_string("orders.db") as checkpointer:
         },
         config
     )
+    
 
     # -----------------------------------------------------
     # Graph has paused at interrupt()

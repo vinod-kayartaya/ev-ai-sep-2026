@@ -52,6 +52,10 @@ Decide what should happen next.
 If this is a payment-related issue, respond exactly:
 HANDOFF:PAYMENT
 
+If this is a product quality related issue, respond exactly:
+HANDOFF:QUALITY
+
+
 Otherwise, respond with:
 HANDLE:ORDER
 """
@@ -68,6 +72,10 @@ HANDLE:ORDER
     if decision == "HANDOFF:PAYMENT":
         return {
             "next_agent": "payment"
+        }
+    if decision == "HANDOFF:QUALITY":
+        return {
+            "next_agent": "quality"
         }
 
     return {
@@ -92,13 +100,28 @@ def payment_agent(state: OrderState):
         )
     }
 
+# ---------------------------------------------------------
+# Quality Agent
+# ---------------------------------------------------------
+
+def quality_agent(state: OrderState):
+
+    print("\nQuality Agent:")
+    print("Quality Agent received the handoff.")
+
+    return {
+        "response": (
+            f"Quality Agent is checking quality "
+            f"for order {state['order_id']}."
+        )
+    }
+
 
 # ---------------------------------------------------------
 # Routing after Order Agent
 # ---------------------------------------------------------
 
 def route_from_order(state: OrderState):
-
     return state["next_agent"]
 
 
@@ -118,6 +141,11 @@ builder.add_node(
     payment_agent
 )
 
+builder.add_node(
+    "quality_agent",
+    quality_agent
+)
+
 builder.add_edge(
     START,
     "order_agent"
@@ -128,7 +156,8 @@ builder.add_conditional_edges(
     route_from_order,
     {
         "order": END,
-        "payment": "payment_agent"
+        "payment": "payment_agent",
+        "quality": "quality_agent"
     }
 )
 
@@ -146,7 +175,7 @@ graph = builder.compile()
 
 result = graph.invoke({
     "order_id": "ORD1001",
-    "message": "I was charged twice for my order.",
+    "message": "The item was damaged when I received",
     "response": "",
     "next_agent": ""
 })

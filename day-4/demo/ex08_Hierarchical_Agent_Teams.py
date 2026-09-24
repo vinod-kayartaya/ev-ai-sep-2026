@@ -59,7 +59,7 @@ order_builder.add_edge(
 
 order_team = order_builder.compile()
 
-
+order_team.get_graph().draw_png(output_file_path="order_team.png")
 # =========================================================
 # PAYMENT TEAM - SUB-GRAPH
 # =========================================================
@@ -185,6 +185,8 @@ parent_builder.add_edge(
 )
 
 graph = parent_builder.compile()
+graph.get_graph().draw_png(output_file_path="ex8.png")
+exit(0)
 
 
 # =========================================================

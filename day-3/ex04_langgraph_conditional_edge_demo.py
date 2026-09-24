@@ -40,17 +40,17 @@ def create_ticket_processor_graph(llm):
 
     def payment_node(state: State) -> State:
         return {
-            "response": "We have forwared your complaint to the payment deparment"
+            "response": "We have forwarded your complaint to the payment deparment"
         }
 
     def delivery_node(state: State) -> State:
         return {
-            "response": "We have forwared your complaint to the delevery deparment"
+            "response": "We have forwarded your complaint to the delevery deparment"
         }
 
     def quality_node(state: State) -> State:
         return {
-            "response": "We have forwared your complaint to the quality deparment"
+            "response": "We have forwarded your complaint to the quality deparment"
         }
 
     def send_email_response(state: State) -> State:
