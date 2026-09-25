@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniSupport AI - Intelligent Technical Support</title>
+  
+  <!-- Bootstrap 5 CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- Highlight.js for code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-light">
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm px-3 py-2">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+        <span class="brand-icon"><i class="bi bi-robot"></i></span>
+        <span class="fw-bold tracking-tight">OmniSupport AI</span>
+        <span class="badge bg-primary text-uppercase fs-xs">RAG Powered</span>
+      </a>
+
+      <!-- Current Session Header Info (Hidden when idle) -->
+      <div id="navSessionInfo" class="d-none d-md-flex align-items-center gap-3 ms-auto me-3 text-light-50">
+        <span class="d-flex align-items-center gap-1">
+          <i class="bi bi-person-circle"></i>
+          <span id="navCustomerName" class="fw-semibold text-white"></span>
+        </span>
+        <span class="text-secondary">|</span>
+        <span id="navProductBadge" class="badge bg-secondary"></span>
+        <span class="text-secondary">|</span>
+        <span id="navSessionStatus" class="badge bg-success-subtle text-success border border-success-subtle">
+          <span class="status-dot active"></span> Active Session
+        </span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-light btn-sm" id="btnOpenHistory" title="View Past Sessions">
+          <i class="bi bi-clock-history me-1"></i> <span class="d-none d-sm-inline">Past Sessions</span>
+        </button>
+        <button class="btn btn-outline-info btn-sm" id="btnOpenKB" title="Explore Historical Knowledge Base">
+          <i class="bi bi-database-check me-1"></i> <span class="d-none d-sm-inline">Knowledge Base ({{ ticket_count }})</span>
+        </button>
+        <button class="btn btn-primary btn-sm" id="btnNewSession">
+          <i class="bi bi-plus-circle me-1"></i> New Session
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container-fluid py-4 px-md-4 main-layout">
+    
+    <!-- Welcome / Start Session Screen (Shown when no session is active) -->
+    <div id="startSessionView" class="row justify-content-center">
+      <div class="col-12 col-lg-8 col-xl-7">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+          <div class="card-header bg-gradient-primary text-white p-4 p-md-5">
+            <div class="d-flex align-items-center gap-3 mb-2">
+              <div class="avatar-header">
+                <i class="bi bi-headset fs-1"></i>
+              </div>
+              <div>
+                <h2 class="fw-bold mb-1">Customer Support Portal</h2>
+                <p class="mb-0 text-white-50">
+                  Grounding answers in verified historical resolutions across our software suite
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body p-4 p-md-5">
+            <h5 class="fw-bold mb-3 text-secondary">Start a New Conversation</h5>
+            <form id="startSessionForm">
+              
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="custName" class="form-label fw-semibold">
+                    <i class="bi bi-person me-1 text-primary"></i> Your Full Name <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" class="form-control form-control-lg" id="custName" placeholder="e.g. Alex Morgan" required>
+                </div>
+                <div class="col-md-6">
+                  <label for="custEmail" class="form-label fw-semibold">
+                    <i class="bi bi-envelope me-1 text-primary"></i> Work Email <span class="text-danger">*</span>
+                  </label>
+                  <input type="email" class="form-control form-control-lg" id="custEmail" placeholder="e.g. alex@company.com" required>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="custProduct" class="form-label fw-semibold">
+                  <i class="bi bi-box-seam me-1 text-primary"></i> Select Software Product <span class="text-danger">*</span>
+                </label>
+                <select class="form-select form-select-lg" id="custProduct" required>
+                  <option value="" disabled selected>-- Select the product you need help with --</option>
+                  {% for p in products %}
+                    <option value="{{ p }}">{{ p }}</option>
+                  {% endfor %}
+                </select>
+                <div class="form-text" id="productTagline">Select a software product to view sample troubleshooting queries.</div>
+              </div>
+
+              <!-- Quick Example Prompts (Dynamically populated based on product) -->
+              <div id="quickPromptsContainer" class="mb-4 d-none">
+                <label class="form-label fw-semibold small text-muted text-uppercase tracking-wider">
+                  <i class="bi bi-lightning-charge me-1 text-warning"></i> Common Historical Queries (Click to try):
+                </label>
+                <div id="quickPromptChips" class="d-flex flex-wrap gap-2"></div>
+              </div>
+
+              <div class="mb-4">
+                <label for="custQuery" class="form-label fw-semibold">
+                  <i class="bi bi-chat-left-dots me-1 text-primary"></i> Describe Your Issue or Question <span class="text-danger">*</span>
+                </label>
+                <textarea class="form-control" id="custQuery" rows="3" placeholder="Explain what error or behavior you are experiencing..." required></textarea>
+              </div>
+
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg fw-semibold shadow-sm" id="btnSubmitStart">
+                  <span class="spinner-border spinner-border-sm me-2 d-none" id="startSpinner"></span>
+                  <i class="bi bi-send-fill me-2" id="startIcon"></i> Start Conversation with Support Bot
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Chat Screen (Shown when session is active) -->
+    <div id="activeChatView" class="row justify-content-center d-none">
+      <div class="col-12 col-xl-10">
+        <div class="card chat-card border-0 shadow-lg rounded-4 overflow-hidden">
+          
+          <!-- Chat Header -->
+          <div class="card-header bg-white border-bottom p-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="session-avatar bg-primary-subtle text-primary">
+                <i class="bi bi-headset fs-3"></i>
+              </div>
+              <div>
+                <div class="d-flex align-items-center gap-2">
+                  <h6 class="mb-0 fw-bold" id="chatHeaderCustomerName">Customer</h6>
+                  <span id="chatProductBadge" class="badge bg-primary">Product</span>
+                  <span id="chatStatusBadge" class="badge bg-success-subtle text-success border border-success-subtle">
+                    <span class="status-dot active"></span> Active
+                  </span>
+                </div>
+                <div class="text-muted small">
+                  <span id="chatHeaderCustomerEmail">email@example.com</span> &bull; 
+                  <span class="text-monospace">Session: <code id="chatSessionIdShort" class="user-select-all"></code></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Session Controls -->
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-outline-secondary btn-sm" id="btnExportTranscript" title="Download Conversation Transcript">
+                <i class="bi bi-download me-1"></i> Transcript
+              </button>
+              <button class="btn btn-outline-danger btn-sm" id="btnEndSession">
+                <i class="bi bi-stop-circle me-1"></i> End Conversation
+              </button>
+            </div>
+          </div>
+
+          <!-- Chat Messages Body -->
+          <div class="card-body chat-body p-3 p-md-4" id="chatMessages">
+            <!-- Messages will be dynamically rendered here -->
+          </div>
+
+          <!-- Typing Indicator -->
+          <div id="typingIndicator" class="px-4 py-2 bg-light border-top d-none">
+            <div class="d-flex align-items-center gap-2 text-muted small">
+              <span class="spinner-grow spinner-grow-sm text-primary" role="status"></span>
+              <span>Searching historical support cases and crafting solution...</span>
+            </div>
+          </div>
+
+          <!-- Ended Session Notice Banner -->
+          <div id="endedSessionBanner" class="p-3 bg-secondary-subtle border-top text-center d-none">
+            <div class="d-flex flex-column align-items-center gap-2">
+              <div class="fw-semibold text-secondary">
+                <i class="bi bi-check-circle-fill text-success me-1"></i> This conversation has been ended.
+              </div>
+              <div class="small text-muted">
+                Need help with another question? Start a new session.
+              </div>
+              <button class="btn btn-primary btn-sm mt-1" id="btnRestartAfterEnd">
+                <i class="bi bi-arrow-clockwise me-1"></i> Start New Conversation
+              </button>
+            </div>
+          </div>
+
+          <!-- Chat Input Bar -->
+          <div class="card-footer bg-white border-top p-3" id="chatInputArea">
+            <form id="sendMessageForm">
+              <div class="input-group">
+                <textarea 
+                  class="form-control" 
+                  id="userMessageInput" 
+                  rows="2" 
+                  placeholder="Type your question or follow-up... (Enter to send, Shift+Enter for new line)"
+                  required
+                ></textarea>
+                <button class="btn btn-primary px-4 d-flex align-items-center justify-content-center" type="submit" id="btnSendMessage">
+                  <i class="bi bi-send-fill fs-5"></i>
+                </button>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mt-2 px-1">
+                <small class="text-muted">
+                  <i class="bi bi-shield-check text-success me-1"></i> Grounded in verified support archives
+                </small>
+                <small class="text-muted">
+                  Press <kbd>Enter</kbd> to send
+                </small>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal: Past Sessions History -->
+  <div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title fw-bold" id="historyModalLabel">
+            <i class="bi bi-clock-history me-2 text-primary"></i> Past Support Conversations
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div id="historyListContainer" class="list-group list-group-flush">
+            <div class="p-4 text-center text-muted">Loading past sessions...</div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Historical Knowledge Base Explorer -->
+  <div class="modal fade" id="kbModal" tabindex="-1" aria-labelledby="kbModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header bg-light">
+          <div>
+            <h5 class="modal-title fw-bold mb-0" id="kbModalLabel">
+              <i class="bi bi-database-check me-2 text-info"></i> Historical Knowledge Base Explorer
+            </h5>
+            <small class="text-muted">Direct view of the historical customer support database used for RAG</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3">
+          <!-- Filter Controls -->
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <label class="fw-semibold small text-muted text-nowrap">Filter by Product:</label>
+            <select class="form-select form-select-sm w-auto" id="kbProductFilter">
+              <option value="">All Products</option>
+              {% for p in products %}
+                <option value="{{ p }}">{{ p }}</option>
+              {% endfor %}
+            </select>
+            <span class="badge bg-secondary ms-auto" id="kbCountBadge">Loading...</span>
+          </div>
+
+          <div id="kbCardsContainer" class="row g-3">
+            <div class="col-12 text-center py-4 text-muted">Loading historical tickets...</div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirm End Session -->
+  <div class="modal fade" id="confirmEndModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-body p-4 text-center">
+          <div class="text-danger fs-1 mb-2">
+            <i class="bi bi-exclamation-octagon"></i>
+          </div>
+          <h5 class="fw-bold mb-2">End This Conversation?</h5>
+          <p class="text-muted small mb-4">
+            Ending the conversation will close the current active support session. 
+            The full conversation history will be saved and accessible in Past Sessions.
+          </p>
+          <div class="d-flex justify-content-center gap-2">
+            <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger px-4" id="btnConfirmEndAction">Yes, End Session</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>
