@@ -102,6 +102,7 @@ payment_builder.add_edge(
 )
 
 payment_team = payment_builder.compile()
+payment_team.get_graph().draw_png(output_file_path="payment_team.png")
 
 
 # =========================================================
