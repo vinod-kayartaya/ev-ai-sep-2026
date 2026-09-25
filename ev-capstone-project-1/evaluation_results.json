@@ -1,0 +1,87 @@
+{
+  "timestamp": "2026-09-25 12:55:22",
+  "overall_accuracy": "100.0%",
+  "average_latency": "0.32 sec",
+  "scenarios": [
+    {
+      "scenario": "Billing amount mismatch",
+      "result": "Pass",
+      "accuracy": "100%",
+      "accuracy_num": 100.0,
+      "latency": "1.2 sec",
+      "latency_sec": 1.23,
+      "criteria": {
+        "entity_identification": true,
+        "information_retrieval": true,
+        "reconciliation_accuracy": true,
+        "hitl_handling": true,
+        "resolution_generated": true
+      },
+      "final_summary": "Complaint Investigation Completed\n\nCustomer: C1024\nInvoice: INV10045\n\nFinding:\nDiscrepancy detected: Internal amount \u20b912,500.00 vs External amount \u20b910,000.00. Difference is \u20b92,500.00.\n\nDiscrepancy:\n\u20b92,500.00\n\nRecommended Resolution:\nCreate a \u20b92,500.00 financial adjustment for the customer.\n\nApproval:\nApproved (Adjustment ID: ADJ12A09A)\n\nStatus:\nApproved - Financial Adjustment Executed"
+    },
+    {
+      "scenario": "Duplicate charge",
+      "result": "Pass",
+      "accuracy": "100%",
+      "accuracy_num": 100.0,
+      "latency": "0.1 sec",
+      "latency_sec": 0.07,
+      "criteria": {
+        "entity_identification": true,
+        "information_retrieval": true,
+        "reconciliation_accuracy": true,
+        "hitl_handling": true,
+        "resolution_generated": true
+      },
+      "final_summary": "Complaint Investigation Completed\n\nCustomer: C1025\nInvoice: INV10046\n\nFinding:\nDuplicate billing detected: Customer C1025 was charged twice (\u20b93,000.00) on 2026-09-21.\n\nDiscrepancy:\n\u20b93,000.00\n\nRecommended Resolution:\nDuplicate billing verified: Customer was charged multiple times for the same transaction. Issue a financial adjustment / refund of \u20b93,000.00 to reconcile the account balance.\n\nApproval:\nApproved (Adjustment ID: ADJ602064)\n\nStatus:\nApproved - Financial Adjustment Executed"
+    },
+    {
+      "scenario": "Correct billing",
+      "result": "Pass",
+      "accuracy": "100%",
+      "accuracy_num": 100.0,
+      "latency": "0.1 sec",
+      "latency_sec": 0.11,
+      "criteria": {
+        "entity_identification": true,
+        "information_retrieval": true,
+        "reconciliation_accuracy": true,
+        "hitl_handling": true,
+        "resolution_generated": true
+      },
+      "final_summary": "Complaint Investigation Completed\n\nCustomer: C1026\nInvoice: INV10047\n\nFinding:\nAmounts match perfectly: Internal \u20b97,500.00 equals External \u20b97,500.00. No discrepancy.\n\nDiscrepancy:\n\u20b90.00\n\nRecommended Resolution:\nInternal invoice records and the third-party billing gateway both confirm an identical amount of \u20b97,500.00. No billing discrepancy detected. No financial adjustment is required. Close ticket and reassure customer of correct charge.\n\nApproval:\nNot Required\n\nStatus:\nResolved - Verified Accurate Billing"
+    },
+    {
+      "scenario": "Financial adjustment (HITL)",
+      "result": "Pass",
+      "accuracy": "100%",
+      "accuracy_num": 100.0,
+      "latency": "0.1 sec",
+      "latency_sec": 0.07,
+      "criteria": {
+        "entity_identification": true,
+        "information_retrieval": true,
+        "reconciliation_accuracy": true,
+        "hitl_handling": true,
+        "resolution_generated": true
+      },
+      "final_summary": "Complaint Investigation Completed\n\nCustomer: C1027\nInvoice: INV10048\n\nFinding:\nDiscrepancy detected: Internal amount \u20b918,000.00 vs External amount \u20b914,500.00. Difference is \u20b93,500.00.\n\nDiscrepancy:\n\u20b93,500.00\n\nRecommended Resolution:\nCreate a \u20b93,500.00 financial adjustment for the customer.\n\nApproval:\nApproved (Adjustment ID: ADJD2C9D5)\n\nStatus:\nApproved - Financial Adjustment Executed"
+    },
+    {
+      "scenario": "Invalid customer/invoice",
+      "result": "Pass",
+      "accuracy": "100%",
+      "accuracy_num": 100.0,
+      "latency": "0.1 sec",
+      "latency_sec": 0.1,
+      "criteria": {
+        "entity_identification": true,
+        "information_retrieval": true,
+        "reconciliation_accuracy": true,
+        "hitl_handling": true,
+        "resolution_generated": true
+      },
+      "final_summary": "Complaint Investigation Completed\n\nCustomer: C9999\nInvoice: INV99999\n\nFinding:\nCustomer C9999 NOT found in internal database. Internal invoice INV99999 NOT found in database. Invoice INV99999 not found or unverified in external billing gateway.\n\nDiscrepancy:\n\u20b90.00\n\nRecommended Resolution:\nInvalid or unverified Record details. Internal investigation confirms that the requested customer ID ('C9999') or invoice ID ('INV99999') does not exist in our operational records. No financial adjustment can be processed without valid customer identification.\n\nApproval:\nNot Required\n\nStatus:\nClosed - Investigation Concluded"
+    }
+  ]
+}

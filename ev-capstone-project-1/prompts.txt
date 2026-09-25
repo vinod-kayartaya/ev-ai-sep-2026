@@ -1,0 +1,109 @@
+# ==============================================================================
+# ENTERPRISE OPERATIONS ASSISTANT - TEST PROMPTS
+# ==============================================================================
+# Usage:
+#   Run: python run_assistant.py
+#   Paste any of the prompts below into the prompt line.
+#   Type 'exit' or 'quit' (or Ctrl+C) to terminate.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# SCENARIO 1: BILLING AMOUNT MISMATCH (OVERCHARGE)
+# ------------------------------------------------------------------------------
+# Expected:
+# - Identifies Customer C1024 and Invoice INV10045
+# - Internal DB Amount: ₹12,500 | External Gateway: ₹10,000
+# - Discrepancy detected: ₹2,500 overcharge
+# - Recommends ₹2,500 financial adjustment
+# - Pauses for Supervisor Human-in-the-Loop Approval
+
+Customer C1024 has complained that they were charged ₹12,500 for their latest invoice, but the amount shown by the billing system is ₹10,000. Investigate the discrepancy and recommend an appropriate resolution.
+
+# Variation (explicit invoice ID provided):
+Customer C1024 reports that invoice INV10045 shows an internal billed amount of ₹12,500, whereas the payment gateway only processed ₹10,000. Please reconcile the difference and issue the needed credit.
+
+
+# ------------------------------------------------------------------------------
+# SCENARIO 2: DUPLICATE BILLING / DUPLICATE CHARGE
+# ------------------------------------------------------------------------------
+# Expected:
+# - Identifies Customer C1025 and Invoice INV10046
+# - Detects two identical charges of ₹3,000 on 2026-09-21 in internal invoices
+# - External gateway confirms only single ₹3,000 transaction
+# - Discrepancy detected: ₹3,000 duplicate charge
+# - Recommends refund/adjustment of ₹3,000
+# - Pauses for Supervisor Human-in-the-Loop Approval
+
+Customer C1025 was charged ₹3,000 twice on invoice INV10046 for their monthly subscription cycle. Please investigate the duplicate billing and recommend resolution.
+
+# Variation (natural language customer dispute):
+Priya Patel (C1025) contacted support saying she was charged ₹3,000 twice on September 21 for invoice INV10046. Check internal and external records and process a refund for the duplicate transaction.
+
+
+# ------------------------------------------------------------------------------
+# SCENARIO 3: ACCURATE BILLING / NO DISCREPANCY DETECTED
+# ------------------------------------------------------------------------------
+# Expected:
+# - Identifies Customer C1026 and Invoice INV10047
+# - Internal DB Amount: ₹7,500 | External Gateway: ₹7,500
+# - Status: MATCH (no difference)
+# - No financial adjustment required (Status: Resolved - Verified Accurate Billing)
+# - Supervisor approval is NOT required
+
+Customer C1026 inquired about invoice INV10047 for ₹7,500 claiming an overcharge. Please verify against external billing records.
+
+# Variation:
+Amit Verma (C1026) disputes his invoice INV10047 of ₹7,500 believing there was a calculation error. Investigate whether the internal amount matches third-party billing gateway records.
+
+
+# ------------------------------------------------------------------------------
+# SCENARIO 4: FINANCIAL ADJUSTMENT WITH HUMAN-IN-THE-LOOP APPROVAL
+# ------------------------------------------------------------------------------
+# Expected:
+# - Identifies Customer C1027 and Invoice INV10048
+# - Internal DB Amount: ₹18,000 | External Gateway: ₹14,500
+# - Discrepancy detected: ₹3,500 rate difference
+# - Pauses execution and displays detailed supervisor review breakdown
+# - If Supervisor types 'APPROVE': Creates adjustment in DB and marks Approved
+# - If Supervisor types 'REJECT': Closes complaint without financial adjustment
+
+Customer C1027 reports that their invoice INV10048 was billed at ₹18,000 instead of their agreed discounted rate of ₹14,500. Reconcile and apply appropriate adjustment.
+
+# Variation:
+Sunita Rao (customer C1027) was invoiced ₹18,000 under INV10048, but the negotiated contract rate recorded with the billing service is ₹14,500. Investigate discrepancy and request supervisor sign-off for the adjustment.
+
+
+# ------------------------------------------------------------------------------
+# SCENARIO 5: INVALID CUSTOMER / NON-EXISTENT INVOICE HANDLING
+# ------------------------------------------------------------------------------
+# Expected:
+# - Customer C9999 or Invoice INV99999 does not exist
+# - Handles missing records gracefully without throwing uncaught exceptions
+# - Status: Closed - Investigation Concluded (no adjustment created)
+
+Customer C9999 is asking about invoice INV99999 for ₹50,000 which cannot be recognized.
+
+# Variation (valid customer, invalid invoice):
+Customer C1024 requested an audit of invoice INV88888 for ₹15,000 which is not showing in their portal.
+
+
+# ------------------------------------------------------------------------------
+# SCENARIO 6: GENERAL ACCOUNT INQUIRY / STANDARD PLAN VERIFICATION
+# ------------------------------------------------------------------------------
+# Expected:
+# - Identifies Customer C1028 and Invoice INV10049
+# - Internal DB Amount: ₹5,000 | External Gateway: ₹5,000
+# - Confirms accurate billing of standard plan; no adjustment needed
+
+Customer C1028 is inquiring about the details and validity of invoice INV10049 for ₹5,000. Reconcile internal invoice with the external gateway.
+
+
+# ------------------------------------------------------------------------------
+# SCENARIO 7: ONLY CUSTOMER ID PROVIDED (AUTO-LOOKUP LATEST INVOICE)
+# ------------------------------------------------------------------------------
+# Expected:
+# - Assistant extracts Customer C1024
+# - Uses get_customer_invoices to automatically locate latest invoice (INV10045)
+# - Reconciles and discovers the ₹2,500 discrepancy
+
+Customer C1024 says they noticed an unexpected extra charge on their latest invoice. Please pull their recent invoice history and verify if there is an overcharge.

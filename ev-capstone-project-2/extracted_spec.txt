@@ -1,0 +1,299 @@
+AI-Orchestrated Java CVE Reachability Analyzer
+LangChain + LangGraph + OpenAI/Qwen + Deterministic Java Analysis
+Problem Statement and Integrated Solution Guide
+This document formalizes the project requirement as an end-to-end solution guide. The problem definition and implementation approach are intentionally integrated so that each business/security requirement directly leads to the corresponding technical solution.
+1. Project Overview
+Modern Java applications typically depend on a large number of third-party libraries. These dependencies may be introduced directly by the application or indirectly through frameworks and other libraries.
+When a security vulnerability or CVE is reported against a particular library version, conventional Software Composition Analysis (SCA) tools can determine whether the affected library exists within an application's dependency graph. However, the presence of a vulnerable dependency does not necessarily mean that the vulnerable functionality is actually used.
+Java Application       |       +-- Framework A              |              +-- Library B                     |                     +-- Vulnerable Library 1.2.3
+A dependency scanner can establish that com.vendor:vulnerable-library:1.2.3 is present. The more actionable question is whether the application actually reaches the vulnerable class or method contained in that library.
+The proposed AI-Orchestrated Java CVE Reachability Analyzer addresses this problem by combining deterministic Java analysis tools with LangChain and LangGraph-based AI orchestration. The LLM provides reasoning, interpretation, orchestration and explanation, while deterministic tools remain responsible for establishing technical facts.
+2. Problem Definition
+Given a Java repository and CVE/vulnerability information, the system must determine whether functionality associated with the vulnerability is statically reachable from the application.
+CVE ↓Affected Artifact ↓Affected Version ↓Dependency Present? ↓Direct / Transitive Dependency ↓Affected JAR ↓Affected Class ↓Affected Method ↓Application Reference ↓Static Call Path ↓Reachability Assessment
+The final result must be supported by evidence generated during the analysis. The system must not treat the mere presence of a vulnerable dependency as proof that vulnerable functionality is reachable. Likewise, failure to find a static path must not automatically be interpreted as proof that the application is safe.
+3. Project Objective
+The objective is to develop an AI-orchestrated analysis system capable of:
+Accepting a Java Maven or Gradle repository.
+Accepting manually supplied CVE information.
+Identifying the application's build system.
+Resolving direct and transitive dependencies.
+Identifying whether the vulnerable artifact and version are present.
+Identifying the affected class and method.
+Inspecting the corresponding JAR.
+Verifying the existence of the affected class and method.
+Analyzing application source code and/or bytecode.
+Identifying references to the affected functionality.
+Constructing a supported static call path where possible.
+Identifying situations requiring human review.
+Maintaining evidence throughout the workflow.
+Producing an explainable final report.
+LangGraph provides orchestration for the multi-step process, LangChain provides LLM and tool integration, and OpenAI models or a locally hosted Qwen model can provide interpretation and reasoning.
+4. Proposed Solution
+The solution follows a hybrid architecture in which AI reasoning is combined with deterministic Java analysis.
+                 AI Reasoning                      |                      v               LangGraph Workflow                      |       +--------------+--------------+       |              |              |       v              v              v Dependency      Vulnerability    Reachability   Tools            Analysis        Tools       |              |              |       +--------------+--------------+                      |                      v              Evidence Aggregation                      |                      v               Assessment Engine                      |             +--------+--------+             |                 |             v                 v        Final Report       Human Review
+The fundamental design principle is: the LLM determines what should be analyzed and how evidence should be interpreted; deterministic tools determine what actually exists in the repository, dependency graph and Java artifacts.
+5. End-to-End Processing Flow
+Java Repository + CVE          |          v  Repository Validation          |          v  Build System Detection          |          v  Dependency Resolution          |          v  Vulnerable Dependency?       /          \     NO            YES     |              |     v              v NOT_PRESENT    CVE Analysis                    |                    v             Symbol Identification                    |                    v              JAR Inspection                    |                    v           Class / Method Found?              /             \            NO               YES            |                 |            v                 v     Human Review /      Source Analysis     Insufficient            |       Evidence              v                       Reference Analysis                              |                              v                       Call Graph Analysis                              |                              v                       Static Path Found?                         /          \                       YES           NO                        |             |                        v             v                 STATICALLY_    NO_STATIC_PATH_                  REACHABLE         FOUND                        \             /                         \           /                          v         v                       Evidence Aggregation                              |                              v                       Assessment                              |                              v                         Final Report
+6. Repository Analysis
+The first stage validates the supplied Java repository and identifies the build system.
+pom.xml indicates Maven.
+build.gradle or build.gradle.kts indicates Gradle.
+Java source directories are identified.
+Test directories and relevant build configuration are identified.
+Example normalized result:
+{  "build_system": "MAVEN",  "source_directory": "src/main/java",  "repository_valid": true}
+This stage should be deterministic rather than LLM-driven.
+7. Dependency Analysis
+After the build system is identified, the appropriate dependency analyzer resolves the complete dependency graph.
+Maven:mvn dependency:treeGradle:./gradlew dependencies
+Raw dependency output should be normalized into structured evidence.
+{  "group": "com.vendor",  "artifact": "vulnerable-library",  "version": "1.2.3",  "scope": "compile",  "direct": false,  "dependency_path": [    "application",    "framework-a",    "library-b",    "com.vendor:vulnerable-library:1.2.3"  ]}
+This establishes whether the vulnerable dependency is present and how it enters the application.
+8. Vulnerability Information Analysis
+The initial project scope does not require integration with an external CVE database. Vulnerability information can be supplied manually as structured input.
+{  "cve_id": "CVE-XXXX-YYYY",  "artifact": "com.vendor:vulnerable-library",  "affected_versions": ["1.2.0", "1.2.1", "1.2.2"],  "affected_class": "com.vendor.Parser",  "affected_method": "parseUnsafe"}
+When the supplied vulnerability information is unstructured, the LLM can interpret it and produce a validated Pydantic model. If the affected class or method cannot be established, the workflow should not guess; it should route to INSUFFICIENT_EVIDENCE or HUMAN_REVIEW.
+class VulnerabilityInfo(BaseModel):    cve_id: str    artifact: str    affected_versions: list[str]    affected_classes: list[str]    affected_methods: list[str]
+9. Vulnerable Artifact Verification
+The affected artifact from the CVE information is compared with the resolved application dependency graph.
+Condition
+Workflow Action
+Vulnerable artifact/version absent
+Return NOT_PRESENT and terminate the deep analysis.
+Vulnerable artifact/version present
+Continue to class, method and reachability analysis.
+Dependency information incomplete
+Retry the analysis or request human intervention.
+10. JAR Analysis
+Once the vulnerable dependency is confirmed, the corresponding JAR must be inspected to establish factual evidence about the vulnerable symbols.
+vulnerable-library-1.2.3.jar             |             +-- com/vendor/Parser.class             |             +-- com/vendor/OtherClass.class
+A basic implementation can use jar and javap. More advanced implementations can use ASM, JavaParser, Javassist or ClassGraph.
+jar tf vulnerable-library-1.2.3.jarjavap -classpath vulnerable-library-1.2.3.jar \      com.vendor.Parser
+The resulting evidence establishes whether the class and method actually exist in the analyzed JAR.
+11. Application Source Analysis
+After verifying the affected class and method, the application source code is analyzed for imports, object creation, field declarations, inheritance and method invocations.
+import com.vendor.Parser;Parser parser = new Parser();parser.parseUnsafe(data);
+Example structured evidence:
+{  "file": "src/main/java/com/example/OrderService.java",  "line": 42,  "target_class": "com.vendor.Parser",  "target_method": "parseUnsafe",  "reference_type": "METHOD_INVOCATION"}
+12. Static Call-Path Analysis
+Finding a direct reference to a vulnerable method is useful, but a stronger result is obtained when a path from an application entry point to the vulnerable method can be established.
+OrderController.submit()        |        vOrderService.processOrder()        |        vParser.parseUnsafe()
+A simplified call graph can be constructed from Java source or bytecode. A graph traversal algorithm can then determine whether a supported path exists.
+For a capstone implementation, JavaParser can be used for source-level analysis. Advanced implementations may use ASM, Soot, WALA or CodeQL.
+13. Reachability Assessment
+The system should produce controlled result states rather than allowing the LLM to generate arbitrary security conclusions.
+Result
+Meaning
+NOT_PRESENT
+Vulnerable artifact/version is not present.
+SYMBOL_NOT_FOUND
+Affected class or method could not be verified.
+STATICALLY_REACHABLE
+A supported static call path was found.
+NO_STATIC_PATH_FOUND
+No static path was found by the implemented analysis.
+INSUFFICIENT_EVIDENCE
+Available evidence is insufficient for a stronger conclusion.
+HUMAN_REVIEW
+Human intervention is required.
+A critical rule is that NO_STATIC_PATH_FOUND must not be interpreted as SAFE. Static analysis establishes what can be supported by the available evidence; it does not prove runtime safety.
+14. Why LangGraph Is Required
+The workflow is stateful and evidence-driven rather than a simple prompt-to-response interaction.
+Dependency Analysis       |       vIs dependency present?       |    YES / NO       |       vSymbol Analysis       |       vIs affected method known?       |    YES / NO       |       vReachability Analysis       |       vWas a path found?       | YES / NO / UNKNOWN       |       vAssessment
+LangGraph is appropriate because it provides state management, nodes, edges, conditional routing, cycles, retries, persistence, interrupts and resumable human-in-the-loop workflows.
+15. Proposed LangGraph State
+class CVEAnalysisState(TypedDict):    repository_path: str    cve_id: str    vulnerability: dict    build_system: str    dependencies: list    vulnerable_dependency: dict    dependency_paths: list    affected_classes: list    affected_methods: list    jar_evidence: list    source_evidence: list    bytecode_evidence: list    references: list    call_paths: list    evidence: list    assessment: str    confidence: str    human_review_required: bool    errors: list
+For a production-oriented implementation, individual structures should be represented with Pydantic models rather than unrestricted dictionaries.
+16. LangGraph Node Design
+repository_validator        ↓build_system_detector        ↓dependency_analyzer        ↓vulnerability_analyzer        ↓symbol_verifier        ↓jar_analyzer        ↓source_analyzer        ↓reachability_analyzer        ↓evidence_aggregator        ↓report_generator
+Additional nodes can handle retries, human review and error handling.
+17. Conditional Routing
+Conditional edges are used to stop analysis early, continue to deeper analysis, retry failed operations or request human input.
+Dependency Analyzer       |       +---- NOT PRESENT ----> Final Assessment       |       +---- PRESENT --------> Symbol Analyzer
+Symbol Verification       |       +---- UNKNOWN ----> Human Review       |       +---- VERIFIED ---> Reachability Analysis
+Reachability Analysis       |       +---- PATH FOUND ----> STATICALLY_REACHABLE       |       +---- NO PATH -------> NO_STATIC_PATH_FOUND       |       +---- AMBIGUOUS -----> HUMAN_REVIEW
+18. LLM Responsibilities
+Interpret supplied CVE descriptions.
+Convert unstructured vulnerability information into validated structured data.
+Determine the next appropriate analysis step.
+Select deterministic tools through tool calling.
+Handle ambiguity.
+Generate precise human-review questions.
+Correlate evidence from multiple analysis stages.
+Generate the final human-readable report.
+The LLM must not independently invent dependency versions, class names, method names, dependency paths or call paths.
+19. Deterministic Tool Responsibilities
+Technical Fact
+Authoritative Source
+Build system
+Repository analyzer
+Dependency version
+Maven / Gradle
+Dependency path
+Maven / Gradle
+JAR existence
+Dependency/build system
+Class existence
+JAR analyzer
+Method existence
+JAR / bytecode analyzer
+Source reference
+Source analyzer
+Bytecode reference
+Bytecode analyzer
+Static call path
+Call graph analyzer
+20. LangChain Tool Calling
+Deterministic Java analyzers can be exposed as LangChain tools so that the LLM can invoke them through structured tool calling.
+@tooldef resolve_dependencies(repository_path: str):    """Resolve Maven or Gradle dependencies."""
+@tooldef inspect_jar(    jar_path: str,    class_name: str,    method_name: str):    """Verify class and method existence in a JAR."""
+@tooldef find_method_references(    repository_path: str,    class_name: str,    method_name: str):    """Find application references to a Java method."""
+21. Evidence Model
+Every important conclusion should be associated with evidence. A formal evidence model makes the assessment explainable and auditable.
+class Evidence(BaseModel):    source: str    evidence_type: str    description: str    file: str | None    line: int | None    command: str | None    confidence: str
+{  "source": "javap",  "evidence_type": "METHOD_EXISTS",  "description": "parseUnsafe exists in com.vendor.Parser",  "file": "vulnerable-library-1.2.3.jar",  "line": null,  "command": "javap ...",  "confidence": "HIGH"}
+22. Human-in-the-Loop
+Human intervention is required whenever available evidence cannot support a reliable automated decision.
+The CVE description does not identify the affected class.
+Multiple potentially affected classes or methods are identified.
+The method signature is ambiguous.
+Required bytecode or source information is unavailable.
+Static analysis produces conflicting or ambiguous results.
+from langgraph.types import interruptanswer = interrupt({    "question": "Which affected Java method should be analyzed?"})
+The graph can resume after the missing information is supplied.
+23. Example End-to-End Scenario
+Application   |   +-- framework-a          |          +-- library-b                 |                 +-- vulnerable-library:1.2.3
+Supplied CVE information:
+Artifact:com.vendor:vulnerable-libraryClass:com.vendor.ParserMethod:parseUnsafe()
+Dependency analysis confirms that the vulnerable dependency is present.
+The dependency is classified as transitive.
+The dependency path is recorded as evidence.
+JAR inspection verifies com.vendor.Parser.
+Method inspection verifies parseUnsafe().
+Source analysis identifies an application invocation.
+Call graph analysis establishes a static path from an application entry point.
+The final assessment is STATICALLY_REACHABLE.
+OrderController.submit()        ↓OrderService.process()        ↓Parser.parseUnsafe()
+24. Negative Scenario
+If the dependency and affected symbol are present but no application reference or supported static path is found, the system should report:
+Dependency:PRESENTAffected Class:PRESENTAffected Method:PRESENTApplication Reference:NOT FOUNDAssessment:NO_STATIC_PATH_FOUND
+The report should explicitly state that the absence of a statically discovered path does not constitute proof of safety.
+25. Evidence-Based Final Report
+The final report should contain:
+CVE identifier and description.
+Affected artifact and affected versions.
+Detected dependency version.
+Direct/transitive classification.
+Dependency path.
+Affected class and method.
+JAR verification evidence.
+Application references and source locations.
+Static call path, where available.
+Assessment status.
+Confidence level.
+Supporting evidence.
+Relevant limitations and uncertainty.
+26. Example Final Report
+=========================================================JAVA CVE REACHABILITY ANALYSIS=========================================================CVE:CVE-XXXX-YYYYAffected Artifact:com.vendor:vulnerable-libraryDetected Version:1.2.3Dependency Type:TRANSITIVEDependency Path:application  -> framework-a  -> library-b  -> vulnerable-library:1.2.3---------------------------------------------------------AFFECTED SYMBOL---------------------------------------------------------Class:com.vendor.ParserMethod:parseUnsafe()Class Present:YESMethod Present:YES---------------------------------------------------------APPLICATION USAGE---------------------------------------------------------Reference:OrderService.java:42Invocation:Parser.parseUnsafe(data)---------------------------------------------------------STATIC CALL PATH---------------------------------------------------------OrderController.submit()    |    vOrderService.process()    |    vParser.parseUnsafe()---------------------------------------------------------ASSESSMENT---------------------------------------------------------STATICALLY_REACHABLEConfidence:HIGH---------------------------------------------------------IMPORTANT LIMITATION---------------------------------------------------------Static reachability does not establish runtimeexploitability. The analysis establishes that asupported static path to the affected functionalitywas identified.=========================================================
+27. Observability
+Because the workflow contains multiple graph nodes, LLM calls and deterministic tools, observability should be included in the solution.
+Graph execution       |       +-- Node execution       |       +-- LLM invocation       |       +-- Tool invocation       |       +-- Tool output       |       +-- Routing decision       |       +-- Retry       |       +-- Human intervention       |       +-- Final result
+Langfuse can be integrated to trace graph execution, LLM calls, tool calls, routing decisions, failures and analysis outcomes.
+28. Evaluation Strategy
+Test Scenario
+Expected Result
+Vulnerable dependency absent
+NOT_PRESENT
+Vulnerable dependency present but unused
+NO_STATIC_PATH_FOUND
+Vulnerable class absent
+SYMBOL_NOT_FOUND
+Vulnerable method absent
+SYMBOL_NOT_FOUND
+Method directly invoked
+STATICALLY_REACHABLE
+Transitive dependency + reachable method
+STATICALLY_REACHABLE
+CVE symbol ambiguous
+HUMAN_REVIEW
+Source/bytecode unavailable
+INSUFFICIENT_EVIDENCE
+Dependency command fails
+Retry / error handling
+Multiple possible symbols
+HUMAN_REVIEW
+Evaluation should verify both the final assessment and the correctness of the supporting evidence.
+29. Project Implementation Phases
+Phase 1 — LangGraph Foundation
+LangGraph state
+Nodes and edges
+Conditional routing
+Pydantic models
+LLM integration
+Phase 2 — Dependency Analysis
+Maven detection
+Gradle detection
+Dependency tree extraction
+Direct/transitive classification
+Dependency path extraction
+Phase 3 — Vulnerable Symbol Analysis
+CVE input
+CVE interpretation
+JAR identification
+Class verification
+Method verification
+Phase 4 — Java Reachability
+Source analysis
+Class references
+Method references
+Call graph
+Static path detection
+Phase 5 — Intelligent Orchestration
+LLM tool calling
+Conditional routing
+Retry
+Human-in-the-loop
+Evidence aggregation
+Phase 6 — Observability and Evaluation
+Langfuse
+Test scenarios
+Failure handling
+Structured reports
+Evaluation metrics
+30. Project Scope
+Java applications.
+Maven and Gradle.
+Direct and transitive dependencies.
+Manually supplied CVE information.
+JAR inspection.
+Class and method verification.
+Java source analysis.
+Basic bytecode analysis where applicable.
+Static call-path analysis.
+LangChain and LangGraph.
+OpenAI or Qwen models.
+Structured output.
+Human-in-the-loop.
+Evidence-based reporting.
+Observability.
+31. Out of Scope
+Automatic CVE discovery.
+Automatic vulnerability remediation.
+Dependency upgrades.
+Patch generation.
+Exploit generation.
+Runtime exploitability verification.
+Dynamic execution tracing.
+Complete Java semantic analysis.
+Production-grade replacement for commercial SCA tools.
+The focused analysis chain is: CVE → Dependency → Affected Symbol → Application Reference → Static Reachability → Evidence.
+32. Future Extensibility
+Although Java is the initial target, the architecture should separate the common vulnerability analysis workflow from language-specific analysis tools.
+                 Common CVE Analysis                         |                         v                  LangGraph Workflow                         |          +--------------+--------------+          |              |              |          v              v              v      Java Analyzer  Node.js Analyzer  Future          |              |              |          v              v              v       Evidence       Evidence       Evidence          |              |              |          +--------------+--------------+                         |                         v                  Common Evidence Model                         |                         v                    Unified Report
+33. Final Solution Architecture
+                         +---------------------+                         |       User          |                         | Repository + CVE    |                         +----------+----------+                                    |                                    v                         +---------------------+                         |     LangGraph       |                         |    Orchestrator     |                         +----------+----------+                                    |              +---------------------+---------------------+              |                     |                     |              v                     v                     v      Repository Analyzer    Dependency Analyzer   CVE Analyzer              |                     |                     |              |                     v                     |              |              Maven / Gradle               |              |                     |                     |              +---------------------+---------------------+                                    |                                    v                            Vulnerable JAR                                    |                                    v                             JAR Analyzer                                    |                                    v                         Class / Method Evidence                                    |                                    v                       Java Source / Bytecode                              Analyzer                                    |                                    v                           Reference Graph                                    |                                    v                         Static Call Graph                                    |                                    v                        Reachability Analysis                                    |                          +---------+---------+                          |                   |                       Sufficient          Insufficient                          |                   |                          |                   v                          |             Human-in-the-Loop                          |                   |                          +---------+---------+                                    |                                    v                           Evidence Aggregator                                    |                                    v                           Assessment Engine                                    |                                    v                           Report Generator                                    |                                    v                         Evidence-Based Report
+34. Core Architectural Principle
+The project should maintain a strict separation between reasoning and verification.
+                LLM / LangGraph                      |          Reasoning + Orchestration                      |                      v             Deterministic Tools                      |          Verification of Technical Facts                      |                      v                   Evidence                      |                      v              Assessment + Report
+This architecture makes the solution substantially more robust than an LLM-only vulnerability analyzer. The AI layer provides orchestration and interpretation, while Maven/Gradle analysis, JAR inspection and Java static analysis provide the factual foundation for every reachability conclusion.

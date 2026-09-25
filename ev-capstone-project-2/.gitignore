@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/test_run/
+workspace_clones/
+tests/mock_jars/
+.env
